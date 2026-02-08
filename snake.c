@@ -2,6 +2,29 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <termios.h>
+#include <fcntl.h>
+
+int kbhit(){ //NON-BLOCK INPUT
+    //RETURN 1 IF THERE IS ANY CHANGES IN BUFFER
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0); //take 0 something value in GETFLN,
+    //guess it is for "block stuff"
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK); //set that to NONBLOCK
+
+    ch = getchar(); //get the char
+
+    fcntl(STDIN_FILENO, F_SETFL, oldf); //return old settings
+
+    if (ch != EOF){
+        ungetc(ch, stdin); //put char into stdin
+        return 1;
+    }
+    return 0;
+}
+
 
 int main(){
     int frame = 0;
@@ -20,13 +43,8 @@ int main(){
     tcsetattr(STDIN_FILENO, TCSANOW, &newattr); //GAME ON
 
     while(frame <101){
-
         system("clear");
-        printf("FRAME: %d\n", frame);
-        //FRAME START
-
-        //USER INPUT FOR DIRECTION
-        direction = keyhit();
+        direction = getchar();
         switch(direction){
             case 'D': //RIGHT
                 if (headX == 9){
@@ -73,22 +91,10 @@ int main(){
             printf("\n");
         }
         frame++;
-        sleep(1);
+        usleep(100000);
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldattr); //GAME OFF
     return 0;
 }
-/*
-int keyhit(){
-    struct termios oldattr, newattr; //define strucutre
-    int ch = '0'; //define character
-    tcgetattr(STDIN_FILENO, &oldattr);
-    newattr = oldattr;
-    newattr.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
-    ch = getchar();
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
-    return ch;
-}
-*/
+
 
