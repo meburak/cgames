@@ -4,7 +4,7 @@
 #include <termios.h>
 #include <fcntl.h>
 
-int kbhit(){ //NON-BLOCK INPUT
+int keyboardHitYes(){ //NON-BLOCK INPUT
     //RETURN 1 IF THERE IS ANY CHANGES IN BUFFER
     struct termios oldt, newt;
     int ch;
@@ -35,6 +35,17 @@ int main(){
                           //W UP MAX 0 MIN 10 ROWS I +
                           //S DOWN MIN 0 MAX 10 ROWS I -
 
+    char headUp = '^'; //HEAD ICONS, ACCORDING TO LAST BUTTON PRESSED
+    char headDown = 'V';
+    char headRight = '>';
+    char headLeft = '<';
+    char headIcon = 'H';
+
+    int pointX = 39; //THE POINT COORDINATES
+    int pointY = 39;
+
+    int playerPoint = 0;
+
     struct termios oldattr, newattr; //OLD TERMINAL SETTINGS (GAME OFF) NEW SETTINGS (GAME ON)
                                      //HIDE KEYBOARD OUTPUT WHEN GAME IS ON
     tcgetattr(STDIN_FILENO, &oldattr);
@@ -42,50 +53,66 @@ int main(){
     newattr.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newattr); //GAME ON
 
-    while(frame <101){
+    while(frame <1000){
         system("clear");
-        direction = getchar();
-        switch(direction){
-            case 'D': //RIGHT
-                if (headX == 9){
-                    headX = 0;
-                    break;
-                } else {
-                    headX++;
-                    break;
-                }
-            case 'A': //LEFT
-                if (headX == 0){
-                    headX = 9;
-                    break;
-                } else {
-                    headX--;
-                    break;
-                }
-            case 'W': //UP
-                if (headY == 0){
-                    headY = 9;
-                    break;
-                } else {
-                    headY--;
-                    break;
-                }
-            case 'S': //DOWN
-                if (headY == 9){
-                    headY = 0;
-                    break;
-                } else {
-                    headY++;
-                    break;
-                }
+        if(keyboardHitYes){ //RUN DETECTION ALGORITHM (switch) IF kbhit returns 1
+            direction = getchar();
+            switch(direction){
+                case 'D': //RIGHT
+                    headIcon = headRight;
+                    if (headX == 39){
+                        headX = 0;
+                        break;
+                    } else {
+                        headX++;
+                        break;
+                    }
+                case 'A': //LEFT
+                    headIcon = headLeft;
+                    if (headX == 0){
+                        headX = 39;
+                        break;
+                    } else {
+                        headX--;
+                        break;
+                    }
+                case 'W': //UP
+                    headIcon = headUp;
+                    if (headY == 0){
+                        headY = 39;
+                        break;
+                    } else {
+                        headY--;
+                        break;
+                    }
+                case 'S': //DOWN
+                    headIcon = headDown;
+                    if (headY == 39){
+                        headY = 0;
+                        break;
+                    } else {
+                        headY++;
+                        break;
+                    }
+            }
         }
         //TILE CREATION
-        for (int i = 0; i <10; i++){ //I
-            for (int j = 0; j<10; j++){ //J
-                if (i == headY && j == headX){ //PUT "H" ON
-                    printf("H "); //TILES THAT MATCH COORDINATES headX, headY
-                } else {
-                    printf("O ");
+        for (int i = 0; i <40; i++){ //I
+            for (int j = 0; j<40; j++){ //J
+                if (i == headY && j == headX && i == pointY && j == pointX){
+                    printf("1 ");
+                    playerPoint++;
+                    pointY = rand() % 39;
+                    pointX = rand() % 39;
+                }
+                else if (i == headY && j == headX){ //PUT "H" ON
+                    printf("%c ", headIcon); //TILES THAT MATCH COORDINATES headX, headY
+                }
+                else if (i == pointY && j == pointX){
+                    printf("@ ");
+                }
+                else {
+                    printf(". ");
                 }
             }
             printf("\n");
