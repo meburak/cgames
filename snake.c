@@ -3,30 +3,36 @@
 #include <stdlib.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <sys/select.h>
 
-int keyboardHitYes(){ //NON-BLOCK INPUT
-    //RETURN 1 IF THERE IS ANY CHANGES IN BUFFER
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
+int kbhit(void){
+    struct timeval tv;
+    fd_set read_fd;
 
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0); //take 0 something value in GETFLN,
-    //guess it is for "block stuff"
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK); //set that to NONBLOCK
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
 
-    ch = getchar(); //get the char
+    FD_ZERO(&read_fd); //clear "bitmask" of read_fd
+    FD_SET(0, &read_fd); //set 1, the 0th bit in read_fd
 
-    fcntl(STDIN_FILENO, F_SETFL, oldf); //return old settings
-
-    if (ch != EOF){
-        ungetc(ch, stdin); //put char into stdin
+    if(select(1, &read_fd, NULL, NULL, &tv) == -1){
+        return 0;
+    }
+    if(FD_ISSET(0, &read_fd)){
         return 1;
     }
-    return 0;
+    else{
+        return 0;
+    }
+}
+
+void Flush(void){
+    while( getchar() != '\n' );
 }
 
 
 int main(){
+    int kbstatus = 0; //IF KBHIT RETURNS TRUE
     int frame = 0;
     int headX = 0;
     int headY = 0;
@@ -54,48 +60,52 @@ int main(){
     tcsetattr(STDIN_FILENO, TCSANOW, &newattr); //GAME ON
 
     while(frame <1000){
+        kbstatus = kbhit();
         system("clear");
-        if(keyboardHitYes){ //RUN DETECTION ALGORITHM (switch) IF kbhit returns 1
+
+        if(kbstatus == 1){ //RUN DETECTION ALGORITHM (switch) IF kbhit returns 1
             direction = getchar();
-            switch(direction){
-                case 'D': //RIGHT
-                    headIcon = headRight;
-                    if (headX == 39){
-                        headX = 0;
-                        break;
-                    } else {
-                        headX++;
-                        break;
-                    }
-                case 'A': //LEFT
-                    headIcon = headLeft;
-                    if (headX == 0){
-                        headX = 39;
-                        break;
-                    } else {
-                        headX--;
-                        break;
-                    }
-                case 'W': //UP
-                    headIcon = headUp;
-                    if (headY == 0){
-                        headY = 39;
-                        break;
-                    } else {
-                        headY--;
-                        break;
-                    }
-                case 'S': //DOWN
-                    headIcon = headDown;
-                    if (headY == 39){
-                        headY = 0;
-                        break;
-                    } else {
-                        headY++;
-                        break;
-                    }
-            }
         }
+
+        switch(direction){
+            case 'D': //RIGHT
+                headIcon = headRight;
+                if (headX == 39){
+                    headX = 0;
+                    break;
+                } else {
+                    headX++;
+                    break;
+                }
+            case 'A': //LEFT
+                headIcon = headLeft;
+                if (headX == 0){
+                    headX = 39;
+                    break;
+                } else {
+                    headX--;
+                    break;
+                }
+            case 'W': //UP
+                headIcon = headUp;
+                if (headY == 0){
+                    headY = 39;
+                    break;
+                } else {
+                    headY--;
+                    break;
+                }
+            case 'S': //DOWN
+                headIcon = headDown;
+                if (headY == 39){
+                    headY = 0;
+                    break;
+                } else {
+                    headY++;
+                    break;
+                }
+        }
+            // //Flush();
         //TILE CREATION
         for (int i = 0; i <40; i++){ //I
             for (int j = 0; j<40; j++){ //J
