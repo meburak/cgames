@@ -1,5 +1,5 @@
 # cgames
-Shell games for practicing C
+Terminal games for practicing C
 ## SNAKE 
 
 Features: 
