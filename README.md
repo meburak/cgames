@@ -1,7 +1,30 @@
 # cgames
 Terminal games for practicing C
 ## SNAKE 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/332a3966-6ae3-4fcd-8042-ed7bb40962d1" />
+```terminal
+> gcc snake.c mygamelib.c -o snake
+> ./snake
+```
+
+<img width="504" height="844" alt="image" src="https://github.com/user-attachments/assets/03f2b73d-539e-4356-8294-99d16a4ee875" />
+
+*Date: 12.02.2026* 
+**Newest**
+
+**Added Features**
+
+- Entry screen, player name input,
+- HUD Displaying Player Name, HP and Points,
+- Optimized check for updates in player status, using `statusChange`,
+- Player power use, will add new powers but for now pressing H gives 1 HP in exchange off 5 Points.
+
+Ideas for next release: 
+
+I should rely on probably creating more functions now and tidying up the code. Also, I can deepen library with colors, special print functions that does not return to 0,Y. 
+
+
+
+<img width="500" height="200" alt="image" src="https://github.com/user-attachments/assets/332a3966-6ae3-4fcd-8042-ed7bb40962d1" />
 
 **Features:** 
 (V3) 
