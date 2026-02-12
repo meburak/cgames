@@ -4,6 +4,8 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <sys/select.h>
+#include <stdbool.h>
+#include "mygamelib.h"
 
 int kbhit(void){
     struct timeval tv;
@@ -30,8 +32,35 @@ void Flush(void){
     while( getchar() != '\n' );
 }
 
+void printHUD(char playerName[], int playerHP, int playerPoint){
+    tc_move_cursor(2,0);
+    printf("PLAYER %s", playerName);
+    tc_move_cursor(2, 3);
+    printf("HEALTH %d", playerHP);
+    tc_move_cursor(40, 3);
+    printf("POINTS %d", playerPoint);
+    tc_move_cursor(0, 4);
+    printf("=================================================");
+    tc_move_cursor(0, 5);
+}
+
+
+void printEffects(char playerName[], int playerHP, int playerPoint){
+    tc_move_cursor(2,0);
+    printf("PLAYER %s", playerName);
+    tc_move_cursor(2, 3);
+    printf("HEALTH %d", playerHP);
+    tc_move_cursor(40, 3);
+    printf("POINTS %d", playerPoint);
+    tc_move_cursor(0, 4);
+    printf("=================================================");
+    tc_move_cursor(0, 5);
+}
 
 int main(){
+    int gridXSize = 25;
+    int gridYSize = 25;
+
     int kbstatus = 0; //IF KBHIT RETURNS TRUE
     int frame = 0;
     int headX = 0;
@@ -47,10 +76,29 @@ int main(){
     char headLeft = '<';
     char headIcon = 'H';
 
-    int pointX = 39; //THE POINT COORDINATES
-    int pointY = 39;
+    int pointX = gridXSize-1; //THE POINT COORDINATES
+    int pointY = gridYSize-1;
 
-    int playerPoint = 0;
+    int playerPoint = 0; //PLAYER STATUS VARIABLES
+    char playerName[] = "";
+    int lastPointWin = 0;
+    int playerHP = 10;
+    char playerAction = 'H';
+    bool pendingPlayerAction = false;
+    bool statusChange = false; //DETECT STATUS CHANGE
+
+
+    system("clear");
+    tc_move_cursor(10,10); //NOTE FUNCTIONALIZE HERE
+    printf("~~SNAKE HEAD~~\n");
+    tc_move_cursor(10, 12);
+    printf("cgames v3\n");
+    tc_move_cursor(10, 14);
+    printf("Enter player name to start: \n");
+    tc_move_cursor(10,16);
+    scanf("%s", playerName);
+
+
 
     struct termios oldattr, newattr; //OLD TERMINAL SETTINGS (GAME OFF) NEW SETTINGS (GAME ON)
                                      //HIDE KEYBOARD OUTPUT WHEN GAME IS ON
@@ -59,19 +107,54 @@ int main(){
     newattr.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newattr); //GAME ON
 
-    while(frame <1000){
-        kbstatus = kbhit();
-        system("clear");
+    system("clear");
+    printf("\033[H");
 
-        if(kbstatus == 1){ //RUN DETECTION ALGORITHM (switch) IF kbhit returns 1
-            direction = getchar();
+    printHUD(playerName, playerHP, playerPoint);
+
+    while(playerHP > 0){
+        kbstatus = kbhit();
+
+        if(statusChange){
+            //BEFORE FRAME CREATION CHECK IF THERE IS ANY CHANGES IN STATUS BAR
+            //WE SET THIS WHEN THERE IS A CHANGE IN PREVIOUS FRAME, THIS WAY WE DO NOT NEED COMPARISON STATEMENTS
+            //MAKING OUR GAME RUN FASTER
+            printHUD(playerName, playerHP, playerPoint);
+            statusChange = false;
         }
 
+        if(kbstatus == 1){ //RUN DETECTION ALGORITHM (switch) IF kbhit returns 1
+            char temp = 'O';
+            temp = getchar();
+            if (temp == 'H'){ //NOTE Implement
+                playerAction = temp; // No one can press two keys at once, hopefully.
+                pendingPlayerAction = true;
+            } //NOTE Point HP Exchange
+            else {
+                direction = temp;
+            }
+        }
+
+        if (pendingPlayerAction) {
+            switch (playerAction){
+                case 'H':
+                    if (playerPoint > 4 && playerHP < 10){
+                        playerPoint = playerPoint - 5;
+                        playerHP++;
+                        statusChange = true;
+                        pendingPlayerAction = false;
+                    }
+                default: 
+                    //do nothing 
+            }
+        }
         switch(direction){
             case 'D': //RIGHT
                 headIcon = headRight;
-                if (headX == 39){
+                if (headX == (gridXSize-1)){
                     headX = 0;
+                    playerHP--;
+                    statusChange = true;
                     break;
                 } else {
                     headX++;
@@ -80,7 +163,9 @@ int main(){
             case 'A': //LEFT
                 headIcon = headLeft;
                 if (headX == 0){
-                    headX = 39;
+                    headX = gridXSize-1;
+                    playerHP--;
+                    statusChange = true;
                     break;
                 } else {
                     headX--;
@@ -89,7 +174,9 @@ int main(){
             case 'W': //UP
                 headIcon = headUp;
                 if (headY == 0){
-                    headY = 39;
+                    headY = (gridYSize-1);
+                    playerHP--;
+                    statusChange = true;
                     break;
                 } else {
                     headY--;
@@ -97,8 +184,10 @@ int main(){
                 }
             case 'S': //DOWN
                 headIcon = headDown;
-                if (headY == 39){
+                if (headY == (gridYSize-1)){
                     headY = 0;
+                    playerHP--;
+                    statusChange = true;
                     break;
                 } else {
                     headY++;
@@ -107,13 +196,25 @@ int main(){
         }
             // //Flush();
         //TILE CREATION
-        for (int i = 0; i <40; i++){ //I
-            for (int j = 0; j<40; j++){ //J
-                if (i == headY && j == headX && i == pointY && j == pointX){
-                    printf("1 ");
+        /*
+        if (lastPointWin != 0){
+            if (frame <= lastPointWin + 5){
+
+
+            }
+        }
+        */
+
+        tc_move_cursor(0,5); //DRAW FROM POINT
+        for (int i = 0; i <gridYSize; i++){ //I
+            for (int j = 0; j<gridXSize; j++){ //J
+                if (i == headY && j == headX && i == pointY && j == pointX){ //POINT GAIN //TRACE ANIMATION?
+                    printf("1 "); //POINT WON
                     playerPoint++;
-                    pointY = rand() % 39;
-                    pointX = rand() % 39;
+                    pointY = rand() % (gridYSize-1);
+                    pointX = rand() % (gridXSize-1);
+                    lastPointWin = frame; //MECHANISM: FRAME, FRAME + 5 FRAMES, 5 BLOCK RADIUS GETS 1 ANIMATION, THEN 6 BLOCK RADIUS GETS 1 ANIMATION.
+                    statusChange = true;
                 }
                 else if (i == headY && j == headX){ //PUT "H" ON
                     printf("%c ", headIcon); //TILES THAT MATCH COORDINATES headX, headY
@@ -122,13 +223,14 @@ int main(){
                     printf("@ ");
                 }
                 else {
-                    printf(". ");
+                    printf("_ ");
                 }
             }
             printf("\n");
         }
+        
         frame++;
-        usleep(100000);
+        usleep(90000);
     }
     tcsetattr(STDIN_FILENO, TCSANOW, &oldattr); //GAME OFF
     return 0;
